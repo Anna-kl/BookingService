@@ -56,8 +56,9 @@ namespace BookingServices.Controllers
                                 level0 = cc.level0,
                                 level1 = cc.level1,
 
-                            }).FirstOrDefault();
-            var categorysend = await _context.Categories.Where(x => x.level == 2 && x.parent == category.level1).ToListAsync();
+                            }).ToList();
+            var cat = category.Select(x => x.level1).ToList();
+            var categorysend = await _context.Categories.Where(x => x.level == 1 && cat.Contains(x.id)).ToListAsync();
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, categorysend,
                null));
         }

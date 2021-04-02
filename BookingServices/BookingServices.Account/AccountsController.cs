@@ -217,7 +217,7 @@ namespace BookingServices.BookingServices.Account
 
         }
         [HttpPut("category"), Authorize]
-        public async Task<JsonResult> PutAccount([FromBody] Category category, [FromHeader] string Authorization)
+        public async Task<JsonResult> PutAccount([FromBody] List<Category> category, [FromHeader] string Authorization)
         {
             string token = Authorization.Split(' ')[1];
             var user = from bb in _context.Auths
@@ -226,14 +226,38 @@ namespace BookingServices.BookingServices.Account
                        where aa.access == token
                        select cc;
             var usercheck = user.FirstOrDefault();
-            var temp = await _context.categoryAccounts.Where(x => x.id_account == usercheck.id).FirstOrDefaultAsync();
-            if (temp == null)
+            var temp = await _context.categoryAccounts.Where(x => x.id_account == usercheck.id).ToListAsync();
+            if (temp.Count == 0)
             {
                 return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null, "Аккаунт не найден"));
 
             }
+            foreach (var cat in category)
+            {
+                var tt = temp.Find(x => x.id == cat.id);
+                if (tt!=null)
+                {
+                    temp.Remove(tt);
+                }
+                else
+                {
+                    CategoryAccount categ = new CategoryAccount
+                    {
 
-            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null, null));
+                        id_account = usercheck.id,
+                        level0 = cat.parent,
+                        level1 = cat.id
+                    };
+                    await _context.categoryAccounts.AddAsync(categ);
+                }
+            }
+             foreach (var t in temp)
+            {
+                _context.categoryAccounts.Remove(t);
+            }
+           await _context.SaveChangesAsync();
+
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null, "Категории обновлены"));
 
         }
 

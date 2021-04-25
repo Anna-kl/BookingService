@@ -31,29 +31,30 @@ namespace BookingServices.BookingServices.Shedule
             _responce = responce;
         }
         // GET: api/<ValuesController>
-        [HttpGet]
+        [HttpGet, Authorize]
         public async Task<JsonResult> Get([FromQuery] string month, [FromQuery] string year, 
             [FromHeader] string Authorization)
         {
             string token = Authorization.Split(' ')[1];
-            var user = (from aa in _context.EmployeeOwners
-                        join bb in _context.Auths on aa.id_user equals bb.id
-                        join dd in _context.Tokens on aa.id_user equals dd.user_id
+            var user = (from bb in _context.Auths 
+                        join dd in _context.Tokens on bb.id equals dd.user_id
                         where dd.access == token
-                        select aa).FirstOrDefault();
+                        select bb).FirstOrDefault();
             if (user == null)
             {
                 return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null, "Пользователь не найден"));
 
             }
-            else
+           else if (user.role=="staff")
+            
             {
                 try
                 {
+                    var staff = await _context.EmployeeOwners.Where(x => x.id_user == user.id).FirstOrDefaultAsync();
                     string s = String.Format("01/{0}/{1}", month, year);
                     var start = DateTime.Parse(s);
                     var end = start.AddMonths(1);
-                    var days = await _context.dayOfWorks.Where(x => x.dttmStart > start && x.dttmEnd < end && x.accountId == user.id).ToListAsync();
+                    var days = await _context.dayOfWorks.Where(x => x.dttmStart > start && x.dttmEnd < end && x.accountId == staff.id).ToListAsync();
 
                     return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, days, null));
                 }
@@ -63,14 +64,44 @@ namespace BookingServices.BookingServices.Shedule
 
                 }
             }
-           
+           else
+            {
+                List<SendCalendar> send = new List<SendCalendar>();
+                var staff = await _context.EmployeeOwners.Where(x => x.id_owner == user.id).ToListAsync();
+                string s = String.Format("01/{0}/{1}", month, year);
+                var start = DateTime.Parse(s);
+                var end = start.AddMonths(1);
+                foreach (var a in staff)
+                {
+                    var days = await _context.dayOfWorks.Where(x => x.dttmStart > start && x.dttmEnd < end && x.accountId == a.id).ToListAsync();
+                    var temp = new SendCalendar
+                    {
+                        days = new List<string>(),
+                        id_staff = a.id
+                    };
+                    foreach (var b in days)
+                    {
+                        temp.days.Add(b.dttmStart.ToString("yyyy-MM-dd").Split(' ')[0]);
+                    }
+                    send.Add(temp);
+                   
 
+                }
+                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send, null));
+            }
+            return null;
         }
 
         // GET api/<ValuesController>/5
-        [HttpGet("{id}")]
+        [HttpGet("{id}"), Authorize]
         public async Task<JsonResult> Get(int id, [FromHeader] string Authorization)
         {
+            string token = Authorization.Split(' ')[1];
+            var user = (from bb in _context.Auths
+                        join aa in _context.Tokens on bb.id equals aa.user_id
+                        where aa.access == token
+                        select bb).FirstOrDefault();
+           
             var data = await _context.conctereDays.Where(x => x.daysof == id).ToListAsync();
             var day = await _context.dayOfWorks.FindAsync(id);
             var send =await (from aa in _context.conctereDays
@@ -88,7 +119,7 @@ namespace BookingServices.BookingServices.Shedule
                            services_name = bb.name,
                            price = bb.price,
                            comment_client=aa.comment
-                       }). ToListAsync();
+                       }).ToListAsync();
             var sendm = new SendDaysWork
             {
                 start = day.dttmStart,
@@ -100,7 +131,75 @@ namespace BookingServices.BookingServices.Shedule
                 sendm, null));
 
         }
+        [HttpGet("business"), Authorize]
+        public async Task<JsonResult> GetBusiness([FromQuery] string days, [FromHeader] string Authorization)
+        {
+            string token = Authorization.Split(' ')[1];
+            var user = (from bb in _context.Auths
+                        join aa in _context.Tokens on bb.id equals aa.user_id
+                        where aa.access == token
+                        select bb).FirstOrDefault();
+            var staff = await _context.EmployeeOwners.Where(x => x.id_owner == user.id).Select(x=>x.id).ToListAsync();
+            var dttm_temp = days.Split('-');
+            var dttm = new DateTime(Convert.ToInt32(dttm_temp[0]), Convert.ToInt32(dttm_temp[1]),
+                Convert.ToInt32(dttm_temp[2]));
+            //   var data = await _context.conctereDays.Where(x => x.dttm_start.Date.ToString("yyyy-MM-dd")==days).ToListAsync();
+            var day = await _context.dayOfWorks.Where(x =>x.dttmStart.Date==dttm.Date &&  staff.Contains(x.accountId)).ToListAsync();
+            var main = new List<Sendbusiness>();
+            foreach (var d in day)
+            {
+                var send = await (from aa in _context.conctereDays
+                                  join ee in _context.dayOfWorks on aa.daysof equals ee.id
+                                  join bb in _context.Services on aa.services_id equals bb.id
+                                  join cc in _context.Clients on aa.client_id equals cc.id
+                                  where ee.id==d.id && aa.iscanceled == false
+                                  orderby aa.dttm_start
+                                  select new Sendbusiness
+                                  {
+                                      id = aa.id,
+                                      start = aa.dttm_start,
+                                      end = aa.dttm_end,
+                                      account_id = ee.accountId,
+                                      services_name = bb.name,
+                                      price = bb.price
+                                  }).ToListAsync();
+                main.AddRange(send);
+                if (send.Count == 0)
+                {
+                   
+                    main.Add(new Sendbusiness
+                    {
+                        id = 0,
+                        services_name=null,
+                        account_id = d.accountId,
+                        price=0
+                    }
+                        );
+                }
+                
+               
+            }
+            foreach(var a in main)
+            {
+                var temp = await _context.EmployeeOwners.Where(x => x.id == a.account_id).FirstOrDefaultAsync();
+                a.resource = temp.firstname + ' ' + temp.lastname;
+                a.html =String.Format("<div class=\"card\" style=\"margin: 0; line - height: 0\">" +
+    "  <div class=\"card-body\" style=\"margin: 0; line-height: 0\">" +
+    "    <h5 class=\"card-title\" style=\"height: 10px; margin-top: -30\">{0}</h5>" +
+    "    <p class=\"card-text\">Стоимость - {1}</p>" +
+    "  </div></div> ", a.services_name, a.price);
+            }
+            //var sendm = new SendDaysWork
+            //{
+            //    start = day.dttmStart,
+            //    end = day.dttmEnd,
+            //    id_day = day.id,
+            //    send = send
+            //};
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK,
+                main, null));
 
+        }
 
         [HttpGet("shedule")]
         public async Task<JsonResult> GetShedule([FromHeader] string Authorization, [FromQuery] int id)
@@ -163,6 +262,19 @@ namespace BookingServices.BookingServices.Shedule
                null));
         }
 
+
+        [HttpGet("days"), Authorize]
+        public async Task<JsonResult> GetAllDays([FromHeader] string Authorization, [FromQuery] int id,
+             [FromQuery] DateTime days)
+        {
+
+            var data = (from aa in _context.dayOfWorks
+                        where aa.dttmStart.Date == days.Date &&
+                        aa.accountId == id
+                        select aa).FirstOrDefault();
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, data,
+               null));
+        }
         // POST api/<ValuesController>
         [HttpPost]
         public async Task<JsonResult> Post([FromBody] DayOfWork days, [FromHeader] string Authorization)
@@ -170,10 +282,15 @@ namespace BookingServices.BookingServices.Shedule
             string token = Authorization.Split(' ')[1];
             var user = (from bb in _context.Auths
                         join aa in _context.Tokens on bb.id equals aa.user_id
-                        join cc in _context.EmployeeOwners on bb.id equals cc.id_user
+                       
                         where aa.access == token
-                        select cc).FirstOrDefault();
-            days.accountId = user.id;
+                        select bb).FirstOrDefault();
+            if (user.role == "staff")
+            {
+                var temp = await _context.EmployeeOwners.Where(x => x.id_user == user.id).FirstOrDefaultAsync();
+                days.accountId = temp.id;
+            }
+            
             try
             {
                 days.dttmStart = days.dttmStart.AddHours(3);
@@ -261,6 +378,53 @@ namespace BookingServices.BookingServices.Shedule
                               }).ToListAsync();
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, data,
               null));
+        }
+
+        [HttpPost("addSerBis"), Authorize]
+        public async Task<JsonResult> AddRecordServicesBis([FromBody] SendTime days,
+           [FromHeader] string Authorization)
+        {
+            Client client = await _context.Clients.Where(x => x.phone == days.phone).FirstOrDefaultAsync();
+            if (client == null)
+            {
+                ServicesModel.Models.Auth.Auth authtemp = new ServicesModel.Models.Auth.Auth
+                {
+                    data_add = DateTime.Now,
+                    Phone = days.phone,
+                    last_visit = DateTime.Now,
+                    is_active = true,
+                    role = "client",
+                    password = "1234"
+                };
+                client = new Client
+                {
+                    name = days.client_name,
+                    update_date = DateTime.Now,
+                    status = "service",
+                    phone = days.phone
+                };
+                await _context.Auths.AddAsync(authtemp);
+                await _context.SaveChangesAsync();
+                client.id_user = authtemp.id;
+                await _context.Clients.AddAsync(client);
+                await _context.SaveChangesAsync();
+            }
+            var services = await _context.Services.Where(x => x.id == days.services_id).FirstOrDefaultAsync();
+            ConctereDay day = new ConctereDay
+            {
+                daysof = days.dayof,
+                dttm_start = days.start,
+                dttm_end = days.start.AddMinutes(services.minutes),
+                client_id = client.id,
+                services_id = days.services_id,
+                is_complete = false,
+                price = 0,
+
+            };
+            await _context.conctereDays.AddAsync(day);
+            await _context.SaveChangesAsync();
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.Created, day,
+               null));
         }
 
         [HttpPost("addServices"), Authorize]

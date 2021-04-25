@@ -12,8 +12,9 @@ namespace ServicesModel.Models.Services
         public string name { get; set; }
         public string descride { get; set; }
         public int minutes { get; set; }
-   
+   public string subcategory { get; set; }
         public string category { get; set; }
-   
+        public int parent { get; set; }
+
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Application.Helpers.Responce;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using ServicesModel.Context;
 using ServicesModel.Models.Account;
 using ServicesModel.Models.Categories;
@@ -296,7 +298,19 @@ namespace BookingServices.BookingServices.Account
                 category.level0 = account.level0;
                 category.level1 = account.level1;
             }
-            await _context.SaveChangesAsync();
+            var http = new HttpClient();
+            string url = String.Format
+                ("https://geocode-maps.yandex.ru/1.x/?apikey=a2c8035f-05f9-4489-aea1-ad9b2a841572&geocode={0}&format=json", account.address);
+            try
+            {
+                var result = await http.GetStringAsync(url);
+                JObject o = JObject.Parse(result);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+                await _context.SaveChangesAsync();
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null, "Данные внесены"));
 
         }

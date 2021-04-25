@@ -35,7 +35,7 @@ namespace BookingServices.BookingServices.Service
         }
 
         //GET: api/Services
-       [HttpGet]
+       [HttpGet, Authorize]
         public async Task<JsonResult> GetServices([FromHeader] string Authorization)
         {
             string token = Authorization.Split(' ')[1];
@@ -60,12 +60,17 @@ namespace BookingServices.BookingServices.Service
                             select new SendServices
                             {
                                 descride = aa.descride,
-                                category = bb.name,
+                                subcategory = bb.name,
                                 minutes = aa.minutes,
                                 name = aa.name,
                                 price = aa.price,
+                                parent = bb.parent,
                                 id = aa.id
                             }).ToList();
+            foreach (var a in services)
+            {
+                a.category = _context.Categories.Find(a.parent).name;
+            }
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, services, null));
 
         }

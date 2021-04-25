@@ -127,6 +127,30 @@ namespace BookingServices.BookingServices.Business
         }
 
 
+        [HttpPost("staff"), Authorize]
+        public async Task<JsonResult> GetStaffs([FromBody] DateSend date, [FromHeader] string Authorization)
+        {
+            var token = Authorization.Split(' ')[1];
+                var client = from aa in _context.Accounts
+                             join bb in _context.Auths on aa.id_user equals bb.id
+                             join cc in _context.EmployeeOwners on aa.id equals cc.id_owner
+                             join dd in _context.Tokens on aa.id_user equals dd.user_id
+                             where dd.access== token
+                             select cc;
+
+                var temp = from aa in _context.dayOfWorks
+                           join bb in _context.EmployeeOwners on aa.accountId equals bb.id
+                           where aa.dttmStart.Date == date.date.Date
+                           select bb;
+           
+
+           var send = client.Except(temp).ToList();
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send, null));
+
+
+
+        }
+
         [HttpGet("full"), Authorize]
         public async Task<JsonResult> GetClientFull([FromHeader] string Authorization)
         {

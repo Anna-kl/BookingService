@@ -44,8 +44,9 @@ namespace BookingServices.BookingServices.Staff
             string token = Authorization.Split(' ')[1];
             var user = (from bb in _context.Auths
                        join aa in _context.Tokens on bb.id equals aa.user_id
+                       join cc in _context.Accounts on bb.id equals cc.id_user
                        where aa.access == token
-                       select bb).FirstOrDefault();
+                       select cc).FirstOrDefault();
             var staffs = await _context.EmployeeOwners.Where(x => x.id_owner == user.id).ToListAsync();
             List<SendEmployee> send = new List<SendEmployee>();
             foreach (var a in staffs)

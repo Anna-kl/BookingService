@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicesModel.Context;
@@ -9,9 +10,10 @@ using ServicesModel.Context;
 namespace ServicesModel.Migrations
 {
     [DbContext(typeof(ServicesContext))]
-    partial class ServicesContextModelSnapshot : ModelSnapshot
+    [Migration("20210426081331_test23")]
+    partial class test23
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicesModel.Context;
@@ -9,9 +10,10 @@ using ServicesModel.Context;
 namespace ServicesModel.Migrations
 {
     [DbContext(typeof(ServicesContext))]
-    partial class ServicesContextModelSnapshot : ModelSnapshot
+    [Migration("20210426071802_test21")]
+    partial class test21
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -260,29 +262,6 @@ namespace ServicesModel.Migrations
                     b.HasIndex("id_user");
 
                     b.ToTable("Clients");
-                });
-
-            modelBuilder.Entity("ServicesModel.Models.Geo.Coordinate", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<int>("account_id")
-                        .HasColumnType("integer");
-
-                    b.Property<double>("lat")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("lon")
-                        .HasColumnType("double precision");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("account_id");
-
-                    b.ToTable("Coordinates");
                 });
 
             modelBuilder.Entity("ServicesModel.Models.Images.PhotoServices", b =>
@@ -596,15 +575,6 @@ namespace ServicesModel.Migrations
                     b.HasOne("ServicesModel.Models.Auth.Auth", "Auth")
                         .WithMany()
                         .HasForeignKey("id_user")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ServicesModel.Models.Geo.Coordinate", b =>
-                {
-                    b.HasOne("ServicesModel.Models.Account.Account", "Account")
-                        .WithMany()
-                        .HasForeignKey("account_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

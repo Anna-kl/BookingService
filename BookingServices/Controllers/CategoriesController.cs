@@ -49,7 +49,7 @@ namespace BookingServices.Controllers
                            owner_id = cc.id_owner
                        };
             var category = (from aa in _context.Accounts
-                            join bb in user on aa.id_user equals bb.owner_id
+                            join bb in user on aa.id equals bb.owner_id
                             join cc in _context.categoryAccounts on aa.id equals cc.id_account
                             select new
                             {

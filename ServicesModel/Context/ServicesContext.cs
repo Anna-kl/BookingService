@@ -4,6 +4,7 @@ using ServicesModel.Models.Account;
 using ServicesModel.Models.Auth;
 using ServicesModel.Models.Categories;
 using ServicesModel.Models.Clients;
+using ServicesModel.Models.Geo;
 using ServicesModel.Models.Images;
 using ServicesModel.Models.Services;
 using ServicesModel.Models.Shedule;
@@ -19,6 +20,7 @@ namespace ServicesModel.Context
   public  class ServicesContext: DbContext
     {
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Coordinate> Coordinates { get; set; }
         public DbSet<Change_Password> change_Passwords { get; set; }
        public DbSet<Auth> Auths { get; set; }
         public DbSet<CategoryAccount> categoryAccounts { get; set; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -294,9 +295,12 @@ namespace BookingServices.BookingServices.Account
             }
             else
             {
-                _context.Entry(category).State = EntityState.Modified;
-                category.level0 = account.level0;
-                category.level1 = account.level1;
+                if (category.level1 != 0)
+                {
+                    _context.Entry(category).State = EntityState.Modified;
+                    category.level0 = account.level0;
+                    category.level1 = account.level1;
+                }
             }
             var http = new HttpClient();
             string url = String.Format
@@ -305,6 +309,33 @@ namespace BookingServices.BookingServices.Account
             {
                 var result = await http.GetStringAsync(url);
                 JObject o = JObject.Parse(result);
+                var res = o["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"];
+                var coor = res.Value<String>("pos").ToString().Split(' ');
+                var coord = await _context.Coordinates.Where(x => x.account_id == account_main.id).FirstOrDefaultAsync();
+                if (coord == null)
+                {
+                    try
+                    {
+                        coord = new ServicesModel.Models.Geo.Coordinate
+                        {
+                            account_id = account_main.id,
+                            lat = double.Parse(coor[1], CultureInfo.InvariantCulture),
+                            lon = double.Parse(coor[2], CultureInfo.InvariantCulture)
+                        };
+                        await _context.Coordinates.AddAsync(coord);
+                    }
+                    catch(Exception e)
+                    {
+                        Console.Write(e.Message);
+                    }
+                }
+                else
+                {
+                    _context.Entry(coord).State = EntityState.Modified;
+                    coord.lat = Convert.ToInt32(coor[0]);
+                    coord.lon= Convert.ToInt32(coor[1]);
+                }
+
             }
             catch (Exception e)
             {
@@ -315,6 +346,60 @@ namespace BookingServices.BookingServices.Account
 
         }
 
+
+        [HttpPut("{id}"), Authorize]
+        public async Task<JsonResult> PutAccount([FromBody] SendAccount account, [FromHeader] string Authorization)
+        {
+            string jwt = Authorization.Split(' ')[1];
+            var user = HttpContext.User.Identity.Name;
+            var account_main = await _context.Accounts.Where(x => x.id_user == Convert.ToInt32(user)).FirstOrDefaultAsync();
+
+            _context.Entry(account_main).State = EntityState.Modified;
+            account_main = _account.Changeacount(account, account_main);
+            
+            var http = new HttpClient();
+            string url = String.Format
+                ("https://geocode-maps.yandex.ru/1.x/?apikey=a2c8035f-05f9-4489-aea1-ad9b2a841572&geocode={0}&format=json", account.address);
+            try
+            {
+                var result = await http.GetStringAsync(url);
+                JObject o = JObject.Parse(result);
+                var res = o["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"];
+                var coor = res.Value<String>("pos").ToString().Split(' ');
+                var coord = await _context.Coordinates.Where(x => x.account_id == account_main.id).FirstOrDefaultAsync();
+                if (coord == null)
+                {
+                    try
+                    {
+                        coord = new ServicesModel.Models.Geo.Coordinate
+                        {
+                            account_id = account_main.id,
+                            lat = double.Parse(coor[0], CultureInfo.InvariantCulture),
+                            lon = double.Parse(coor[1], CultureInfo.InvariantCulture)
+                        };
+                        await _context.Coordinates.AddAsync(coord);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Write(e.Message);
+                    }
+                }
+                else
+                {
+                    _context.Entry(coord).State = EntityState.Modified;
+                    coord.lat = Convert.ToInt32(coor[0]);
+                    coord.lon = Convert.ToInt32(coor[1]);
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            await _context.SaveChangesAsync();
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null, "Данные внесены"));
+
+        }
         // DELETE: api/Accounts/5
         //[HttpDelete("{id}")]
         //public async Task<ActionResult<Account>> DeleteAccount(int id)

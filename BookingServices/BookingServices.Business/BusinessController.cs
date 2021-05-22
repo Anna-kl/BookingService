@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ServicesModel.Context;
+using ServicesModel.Models.Account;
 using ServicesModel.Models.Business;
 using ServicesModel.Models.Categories;
 using ServicesModel.Models.Clients;
@@ -184,17 +185,32 @@ namespace BookingServices.BookingServices.Business
         }
 
         [HttpGet("organization"), Authorize]
-        public async Task<JsonResult> GetOrganization([FromQuery] int id)
+        public async Task<JsonResult> GetOrganization([FromQuery] int id,
+            [FromQuery] double lat, [FromQuery] double lng)
         {
             var client = await _context.Services.Where(x => x.category == id).ToListAsync();
 
             var res = (from aa in _context.EmployeeOwners
                        join bb in _context.Services on aa.id equals bb.account_id
                        join cc in _context.Accounts on aa.id_owner equals cc.id
+                    join ee in _context.Coordinates on aa.id_owner equals ee.account_id
                        where bb.category == id
-                       select cc).Distinct().ToList();
+                       select new GetAccount
+                       {
+                           id=cc.id,
+                           name=cc.name,
+                           rating = 0,
+                           address=cc.address,
+                           //distinct=Math.Abs(Math.Sqrt((lat-ee.lat)* (lat - ee.lat)+
+                           //(lng - ee.lon) * (lng - ee.lon)))
+                       }).Distinct().ToList();
 
-
+            foreach(var a in res)
+            {
+                var coor =  _context.Coordinates.Where(x => x.account_id == a.id).FirstOrDefault();
+                a.distinct =Math.Round( Math.Abs(Math.Sqrt((lat - coor.lat) * (lat - coor.lat) +
+                           (lng - coor.lon) * (lng - coor.lon))),2);
+            }
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, res, null));
 
 

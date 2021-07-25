@@ -13,6 +13,7 @@ namespace ServicesModel.Models.Account
         public string address { get; set; }
         [DataType(DataType.EmailAddress)]
         public string email { get; set; }
+        public string site { get; set; }
         [DataType(DataType.PhoneNumber)]
         public string phone { get; set; }
         [ForeignKey("Auth")]

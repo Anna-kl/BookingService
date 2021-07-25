@@ -186,7 +186,7 @@ namespace BookingServices.BookingServices.Account
 
             if (responce[0] == "OK")
             {
-                var checkuser = await _context.Userpics.Where(x => x.account_id == usercheck.id).FirstOrDefaultAsync();
+                var checkuser = await _context.Userpics.Where(x => x.account_id == 1).FirstOrDefaultAsync();
                 if (checkuser == null)
                 {
                     Userpic userpic = new Userpic
@@ -194,7 +194,7 @@ namespace BookingServices.BookingServices.Account
                         path = responce[2],
                         name = responce[1],
                         dttmadd = DateTime.UtcNow,
-                        account_id = usercheck.id
+                        account_id = 1
                     };
                     await _context.Userpics.AddAsync(userpic);
                 }

@@ -14,7 +14,8 @@ namespace ServicesModel.Models.Auth
         public int id { get; set; }
       
         [DataType(DataType.EmailAddress)]
-      
+      public string Name { get; set; }
+        public string LastName { get; set; }
         public string email { get; set; }
         public string UserName { get; set; }
         [Required]

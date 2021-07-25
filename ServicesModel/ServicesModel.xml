@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ServicesModel</name>
+    </assembly>
+    <members>
+        <member name="T:ServicesModel.Models.Auth.Register">
+            <summary>
+            Модель для регистрации пльзователя
+            </summary>
+        </member>
+        <member name="P:ServicesModel.Models.Auth.Register.email">
+            <summary>
+            телефон или email (телефон в формате 9998887766)
+            </summary>
+        </member>
+        <member name="P:ServicesModel.Models.Auth.Register.role">
+            <summary>
+            client, staff, owner
+            </summary>
+        </member>
+        <member name="P:ServicesModel.Models.Auth.Register.uid">
+            <summary>
+            код телефона (уникальный номер устройства)
+            </summary>
+        </member>
+    </members>
+</doc>

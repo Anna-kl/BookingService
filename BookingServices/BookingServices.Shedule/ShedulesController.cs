@@ -335,7 +335,9 @@ namespace BookingServices.BookingServices.Shedule
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.Created, day,
                null));
         }
-        public string CheckEmail(string email)
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        private string CheckEmail(string email)
         {
             string pattern = @"\d{11}|\d{10}";
             var match = Regex.Matches(email, pattern);

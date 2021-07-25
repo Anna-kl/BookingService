@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BookingServices</name>
+    </assembly>
+    <members>
+        <member name="M:BookingServices.BookingServices.Auth.AuthsController.CheckUid(System.String)">
+            <summary>
+            Проверка номер устройства 
+            </summary>
+            <param name="uid"></param>
+            <returns>Результат проверки</returns>
+            <response code="200">Устройство уже зарегистрировано</response>
+            <response code="400">Устройство не найдено</response>
+        </member>
+        <member name="M:BookingServices.BookingServices.Auth.AuthsController.OutUser(System.String)">
+            <summary>
+            Стереть номер устройства, выйти из аккаунта
+            </summary>
+            <param name="Authorization"></param>
+            <returns>Результат удаления номера</returns>
+            <response code="200">Устройство уже зарегистрировано</response>
+            <response code="400">Устройство не найдено</response>
+        </member>
+        <member name="M:BookingServices.BookingServices.Auth.AuthsController.PostAuth(ServicesModel.Models.Auth.Register)">
+            <summary>
+            Создание пользователя (собственник или сотрудник)
+            </summary>
+            <param name="auth"></param>
+            <returns>Json Object</returns>
+        </member>
+        <member name="M:BookingServices.BookingServices.Auth.AuthsController.PostAuthClient(ServicesModel.Models.Auth.Register)">
+            <summary>
+            Регистрация пользователя
+            </summary>
+            <param name="auth"></param>
+            <returns>JSON Object</returns>
+        </member>
+        <member name="M:BookingServices.BookingServices.Auth.AuthsController.Authorize(ServicesModel.Models.Auth.Register)">
+            <summary>
+            Авторизация зарегистрированного пользователя
+            </summary>
+            <param name="token"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BookingServices.Helpers.ImageWorker.ImageWriter.CheckIfImageFile(Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            Method to check if file is image file
+            </summary>
+            <param name="file"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BookingServices.Helpers.ImageWorker.ImageWriter.WriteFile(Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            Method to write file onto the disk
+            </summary>
+            <param name="file"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Application.Helpers.Responce.Responce.Answer.responce">
+            <summary>
+            Json объекта ответа сервера
+            </summary>
+        </member>
+        <member name="T:Application.Helpers.Responce.Responce.state">
+            <summary>
+            Статус ответа
+            </summary>
+        </member>
+        <member name="P:Application.Helpers.Responce.Responce.state.code">
+            <summary>
+            HttpStatus code
+            </summary>
+        </member>
+        <member name="P:Application.Helpers.Responce.Responce.state.message">
+            <summary>
+            Сообщение об ошибке
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicesModel.Context;
@@ -9,9 +10,10 @@ using ServicesModel.Context;
 namespace ServicesModel.Migrations
 {
     [DbContext(typeof(ServicesContext))]
-    partial class ServicesContextModelSnapshot : ModelSnapshot
+    [Migration("20210626150840_specialist2")]
+    partial class specialist2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -178,30 +180,6 @@ namespace ServicesModel.Migrations
                     b.HasIndex("authid");
 
                     b.ToTable("Confirms");
-                });
-
-            modelBuilder.Entity("ServicesModel.Models.Auth.SMSCode", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<string>("code")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("dttm_add")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("phone")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("status")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("id");
-
-                    b.ToTable("SMSCodes");
                 });
 
             modelBuilder.Entity("ServicesModel.Models.Auth.Token", b =>

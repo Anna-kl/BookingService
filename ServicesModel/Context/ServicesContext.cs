@@ -32,10 +32,12 @@ namespace ServicesModel.Context
         public DbSet<EmployeeOwner> EmployeeOwners { get; set; }
         public DbSet<Confirm> Confirms { get; set; }
         public DbSet<Userpic> Userpics { get; set; }
+        public DbSet<UID> Uids { get; set; }
         public DbSet<PhotoServices> photoServices { get; set; }
         public DbSet<DayOfWork> dayOfWorks { get; set; }
         public DbSet<ConctereDay> conctereDays { get; set; }
         public DbSet<Shedule> Shedules { get; set; }
+        public DbSet<SMSCode> SMSCodes { get; set; }
         public DbSet<StaffService> Services { get; set; }
 
         public ServicesContext(DbContextOptions<ServicesContext> options) : base(options)

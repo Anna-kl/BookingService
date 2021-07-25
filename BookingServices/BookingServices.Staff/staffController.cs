@@ -47,6 +47,7 @@ namespace BookingServices.BookingServices.Staff
                        join cc in _context.Accounts on bb.id equals cc.id_user
                        where aa.access == token
                        select cc).FirstOrDefault();
+
             var staffs = await _context.EmployeeOwners.Where(x => x.id_owner == user.id).ToListAsync();
             List<SendEmployee> send = new List<SendEmployee>();
             foreach (var a in staffs)
@@ -55,23 +56,6 @@ namespace BookingServices.BookingServices.Staff
                 var auth = await _context.Auths.FindAsync(a.id_user);
                 b.lastvisit = auth.last_visit;
                 b.role = auth.role;
-                //var image = await _context.UserpicsStaff.Where(x => x.account_id == a.id).FirstOrDefaultAsync();
-                //if (image == null)
-                //{
-
-                //    b.avatar = null;
-                //}
-                //else
-                //{
-                //    //MemoryStream ms = new MemoryStream();
-                //    //var image1 = System.IO.File.OpenRead(image.path);
-                //    //var ext = image.name.Split('.')[1];
-                //    //image1.CopyTo(ms);
-                //    //var data = ms.ToArray();
-                //    //var image1 = System.IO.File.OpenRead(image.path);
-                //    //b.avatar = File(image1, "image/jpeg");
-                    
-                //}
                 send.Add(b);
             }
             return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send,
@@ -194,6 +178,7 @@ namespace BookingServices.BookingServices.Staff
             var usercheck = user.FirstOrDefault();
             var check = await _context.Auths.Where(x => (x.email == employeeOwner.email && employeeOwner.email!=null)
             || (x.Phone == employeeOwner.phone && employeeOwner.phone!=null)).FirstOrDefaultAsync();
+            
             if (check != null)
             {
                 return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.BadRequest, null,
@@ -202,12 +187,16 @@ namespace BookingServices.BookingServices.Staff
             }
             else
             {
+                if (employeeOwner.phone.StartsWith('7'))
+                {
+                    employeeOwner.phone = employeeOwner.phone.Substring(1).Replace("(", "").Replace(")", "");
+                }
                 ServicesModel.Models.Auth.Auth auth = new ServicesModel.Models.Auth.Auth
                 {
                     email = employeeOwner.email,
                     Phone = employeeOwner.phone,
                     data_add = DateTime.Now,
-                    password = "12341234",
+                    password = "1234",
                     role = "staff",
                     UserName = employeeOwner.email,
                     last_visit = DateTime.Now
@@ -228,6 +217,7 @@ namespace BookingServices.BookingServices.Staff
                 employeeOwner.link = link;
                 employeeOwner.id_user = auth.id;
                 employeeOwner.id_owner = usercheck.id;
+                employeeOwner.date_add = DateTime.Now;
                 await _context.EmployeeOwners.AddAsync(employeeOwner);
                 await _context.SaveChangesAsync();
                  
@@ -265,7 +255,6 @@ namespace BookingServices.BookingServices.Staff
           
             var responce = await _imageHandler.UploadUserpic(file);
 
-
             if (responce[0] == "OK")
             {
 
@@ -276,16 +265,14 @@ namespace BookingServices.BookingServices.Staff
                         dttmadd = DateTime.UtcNow,
                         account_id = id
                     };
-                    await _context.UserpicsStaff.AddAsync(userpic);
-                
-              
+
+                await _context.UserpicsStaff.AddAsync(userpic);
 
                 await _context.SaveChangesAsync();
                 return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null, "Изображение сохранено"));
             }
             else
             {
-                //var er = _localizer["error_image"];
 
                 return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.BadRequest, responce[1], "Изображение не сохранено"));
             }

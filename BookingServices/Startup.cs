@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Application.Helpers.Authentication;
@@ -20,6 +22,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.IdentityModel.Tokens;
 using ServicesModel.Context;
 using ServicesModel.Models.Auth;
@@ -54,7 +57,23 @@ namespace BookingServices
             //    "http://ocpio.com/");
             //}));
 
-
+            services.AddSwaggerGen(c =>
+            {
+                c.IncludeXmlComments(XmlCommentsFilePath);
+                c.IncludeXmlComments(XmlCommentsFileClass);
+                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+                {
+                    Title = "Заказ услуг",
+                    Version = "v1",
+                    Description = "Описание API для предоставления сервисов",
+                    Contact = new Microsoft.OpenApi.Models.OpenApiContact
+                    {
+                        Name = "Климова Анна",
+                        Email = "klimova_88@mail.ru",
+                        Url = new Uri("http://ocpio.com"),
+                    }
+                });
+            });
             services.AddTransient<IImageWriter,
                                   ImageWriter>();
             services.AddTransient<IImageReader,
@@ -108,11 +127,42 @@ namespace BookingServices
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();
-            
+
+            app.UseSwagger();
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shedule Services API V1");
+
+                // To serve SwaggerUI at application's root page, set the RoutePrefix property to an empty string.
+                c.RoutePrefix = string.Empty;
+            });
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+        }
+
+        static string XmlCommentsFilePath
+        {
+            get
+            {
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var fileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
+                return Path.Combine(basePath, fileName);
+            }
+        }
+        static string XmlCommentsFileClass
+        {
+            get
+            {
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var fileName = "ServicesModel" + ".xml";
+                return Path.Combine(basePath, fileName);
+            }
         }
     }
 }

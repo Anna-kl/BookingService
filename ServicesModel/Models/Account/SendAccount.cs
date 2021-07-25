@@ -17,5 +17,12 @@ namespace ServicesModel.Models.Account
         public string phone { get; set; }
        public DateTime update { get; set; }
     }
-   
+
+    public class SendAccountPhone
+    {
+        public string token { get; set; }
+        public string name { get; set; }
+        public string role { get; set; }
+    }
+
 }

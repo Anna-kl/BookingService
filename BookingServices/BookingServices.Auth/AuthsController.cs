@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using ServicesModel.Models.Clients;
 using Microsoft.AspNetCore.Authorization;
 using System.Net.Http;
+using ServicesModel.Models.Staff;
 
 namespace BookingServices.BookingServices.Auth
 {
@@ -123,24 +124,14 @@ namespace BookingServices.BookingServices.Auth
                 var token = _auth.Generate_Tokens(old_token.user_id, user.role);
                 await _context.Tokens.AddAsync(token);
                 await _context.SaveChangesAsync();
-                if (user.role == "owner") {
-                    var name = await _context.Accounts.Where(x => x.id_user == user.id).FirstOrDefaultAsync();
-                    var send = new SendAccountPhone
-                    {
-                        name = name.name,
-                        role = user.role,
-                        token = token.access
-
-                    };
-                
-
-                return Ok(send);
+                var send = await _account.ReturnAuth(user.id, user.role);
+                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send, "Пользователь найден"));
             } else
                 {
-                    return null;
-                }
+                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null,
+                    "Пользователь не найден"));
             }
-            return NotFound();
+            
         }
 
         /// <summary>
@@ -179,18 +170,18 @@ namespace BookingServices.BookingServices.Auth
             string code = random.Next(1001, 9999).ToString();
 
 
-            string request = String.Format("https://api.ucaller.ru/v1.0/initCall?service_id=424899&key=87P72MxNzTKK2IaHC4J2dtCvckI8dr3C&phone={0}&code={1}", phone, code);
-            HttpClientHandler clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
-            HttpClient client = new HttpClient(clientHandler);
-            var result =await client.GetAsync(request);
+         //   string request = String.Format("https://api.ucaller.ru/v1.0/initCall?service_id=424899&key=87P72MxNzTKK2IaHC4J2dtCvckI8dr3C&phone={0}&code={1}", phone, code);
+         //   HttpClientHandler clientHandler = new HttpClientHandler();
+         //   clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
+         //   HttpClient client = new HttpClient(clientHandler);
+         //   var result =await client.GetAsync(request);
 
-            if (result.StatusCode == System.Net.HttpStatusCode.OK) {
+            //if (result.StatusCode == System.Net.HttpStatusCode.OK) {
 
                 var codeSend = new SMSCode
                 {
                     dttm_add = DateTime.Now,
-                    code = code,
+                    code = "1111",
                     status = false,
                     phone = phone
                 };
@@ -199,30 +190,73 @@ namespace BookingServices.BookingServices.Auth
                 await _context.SaveChangesAsync();
                 return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null, "Код отправлен"));
 
-            }
-            else
-            {
-                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.BadRequest, null,
-                    "Невозможно совершить звонок"));
-            }
+            //}
+            //else
+            //{
+            //    return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.BadRequest, null,
+            //        "Невозможно совершить звонок"));
+            //}
 
         }
 
         [HttpPost("code")]
         public async Task<ActionResult> CheckCode([FromBody] CheckCode phone)
         {
-            var code = (from aa in _context.SMSCodes
-                        join bb in _context.Auths on aa.phone equals bb.Phone
-                        where aa.phone == phone.phone && aa.code == phone.code && aa.dttm_add.AddMinutes(5) > DateTime.Now
-                        select aa).FirstOrDefault();
-            if (code != null)
+            if (ModelState.IsValid)
             {
-                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, null,
-                    "Клиент подтвержден"));
-            } else
+                var code = (from aa in _context.SMSCodes
+                            join bb in _context.Auths on aa.phone equals bb.Phone
+                            where aa.phone == phone.phone && aa.code == phone.code && aa.dttm_add.AddMinutes(5) > DateTime.Now
+                            select aa).FirstOrDefault();
+
+                if (code == null)
+                {
+                    return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null,
+                        "Телефон не подтвержден"));
+                }
+                else
+                {
+                    var user = await _context.Auths.Where(x => x.Phone == phone.phone).ToListAsync();
+                    Token token = null;
+                    if (user.Count != 0)
+                    {
+                        var uid = new UID
+                        {
+                            updateDttm = DateTime.Now,
+                            uid = phone.id,
+                        };
+                        ServicesModel.Models.Auth.Auth findUser = null;
+                        if (user.Exists(x => x.role == "owner"))
+                        {
+                            findUser = user.Find(x => x.role == "owner");
+                        }
+                        else
+                        {
+                            findUser = user.Find(x => x.role == "staff");
+                        }
+                        token = await _context.Tokens.Where(x => x.user_id == findUser.id).FirstAsync();
+                        _context.Remove(token);
+                        token = _auth.Generate_Tokens(findUser.id, findUser.role);
+                        await _context.Tokens.AddAsync(token);
+                        uid.id_user = findUser.id;
+                        await _context.Uids.AddAsync(uid);
+                        var send = await _account.ReturnAuth(findUser.id, findUser.role);
+                        await _context.SaveChangesAsync();
+                        return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send,
+                        "Пользователь найден"));
+                    }
+                    else
+                    {
+                        return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NoContent, null,
+                       "Код подтвержден"));
+                    }
+                }
+            }
+
+            else
             {
-                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null,
-                    "Такой код не найден"));
+                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.BadRequest, null,
+                       "Не заполнено"));
             }
 
         }
@@ -464,66 +498,78 @@ namespace BookingServices.BookingServices.Auth
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        [HttpPost("token")]
-        public async Task<JsonResult> Authorize([FromBody] Register token)
+        [HttpPost("token"), Authorize]
+        public async Task<JsonResult> Authorize([FromHeader] string Authorization)
         {
-            if (token.email.StartsWith("+7") || token.email.StartsWith("+7"))
+            string token = Authorization.Split(' ')[1];
+            var user = (from bb in _context.Auths
+                        join aa in _context.Tokens on bb.id equals aa.user_id
+                        select bb).FirstOrDefault();
+            if (user != null)
             {
-                if (token.email.StartsWith("+7") && !token.email.Contains("@"))
+                if (user.role == "owner")
                 {
-                    token.email = token.email.Substring(2).Replace("(","").Replace(")","");
-                } else if (token.email.StartsWith("8") || token.email.StartsWith("+7"))
-                {
-                    token.email = token.email.Substring(1).Replace("(", "").Replace(")", "");
+                    var send = await _account.ReturnAuth(user.id, user.role);
+                    send.role = user.role;
+                    return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send, null));
                 }
             }
-            var user = await _context.Auths.Where(x => (x.email == token.email || x.Phone == token.email) && x.password == token.password).FirstOrDefaultAsync();
-            if (user == null)
-            {
-                bool flag_temp = false;
-                if (token.email != null)
-                {
-                    
-                    var check_temp = (from aa in _context.change_Passwords
-                                      join bb in _context.Auths on aa.user_id equals bb.id
-                                      where bb.email == token.email && aa.password == token.password
-                                      select aa).FirstOrDefault();
-                    
-                    if (check_temp != null)
-                    {
-                        user = await _context.Auths.FindAsync(check_temp.user_id);
-                        _context.Entry(user).State = EntityState.Modified;
-                        user.password = check_temp.password;
-                        flag_temp = true;
-                    }
-                }
-                if (!flag_temp)
-                return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null, "Нет такого пользователя"));
+            //if (token.email.StartsWith("+7") || token.email.StartsWith("+7"))
+            //{
+            //    if (token.email.StartsWith("+7") && !token.email.Contains("@"))
+            //    {
+            //        token.email = token.email.Substring(2).Replace("(","").Replace(")","");
+            //    } else if (token.email.StartsWith("8") || token.email.StartsWith("+7"))
+            //    {
+            //        token.email = token.email.Substring(1).Replace("(", "").Replace(")", "");
+            //    }
+            //}
+            //var user = await _context.Auths.Where(x => (x.email == token.email || x.Phone == token.email) && x.password == token.password).FirstOrDefaultAsync();
+            //if (user == null)
+            //{
+            //    bool flag_temp = false;
+            //    if (token.email != null)
+            //    {
 
-            }
-            var old_token = await _context.Tokens.Where(x => x.user_id == user.id).FirstOrDefaultAsync();
-            if (old_token != null)
-            {
-                _context.Tokens.Remove(old_token);
-            }
-            var new_token = _auth.Generate_Tokens(user.id, user.role);
-            await _context.Tokens.AddAsync(new_token);
-            _context.Entry(user).State = EntityState.Modified;
-            user.last_visit = DateTime.Now;
-            await _context.SaveChangesAsync();
-            var send = await _account.ReturnAuth(user.id, user.role);
-            send.role = user.role;
-           
-              var  uid = new UID
-                {
-                    updateDttm = DateTime.Now,
-                    id_user = user.id,
-                    uid = token.uid,
+            //        var check_temp = (from aa in _context.change_Passwords
+            //                          join bb in _context.Auths on aa.user_id equals bb.id
+            //                          where bb.email == token.email && aa.password == token.password
+            //                          select aa).FirstOrDefault();
 
-                };
-                await _context.Uids.AddAsync(uid);
-            await _context.SaveChangesAsync();
-            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.OK, send, null));
+            //        if (check_temp != null)
+            //        {
+            //            user = await _context.Auths.FindAsync(check_temp.user_id);
+            //            _context.Entry(user).State = EntityState.Modified;
+            //            user.password = check_temp.password;
+            //            flag_temp = true;
+            //        }
+            //    }
+            //    if (!flag_temp)
+            //    return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, null, "Нет такого пользователя"));
+
+            //}
+            //var old_token = await _context.Tokens.Where(x => x.user_id == user.id).FirstOrDefaultAsync();
+            //if (old_token != null)
+            //{
+            //    _context.Tokens.Remove(old_token);
+            //}
+            //var new_token = _auth.Generate_Tokens(user.id, user.role);
+            //await _context.Tokens.AddAsync(new_token);
+            //_context.Entry(user).State = EntityState.Modified;
+            //user.last_visit = DateTime.Now;
+            //await _context.SaveChangesAsync();
+
+
+            //  var  uid = new UID
+            //    {
+            //        updateDttm = DateTime.Now,
+            //        id_user = user.id,
+            //        uid = token.uid,
+
+            //    };
+            //    await _context.Uids.AddAsync(uid);
+            //await _context.SaveChangesAsync();
+            return new JsonResult(_responce.Return_Responce(System.Net.HttpStatusCode.NotFound, "Не найден", null));
 
 
         }

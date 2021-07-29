@@ -19,6 +19,7 @@ namespace ServicesModel.Models.Account
         [ForeignKey("Auth")]
         public int id_user { get; set; }
         public DateTime update { get; set; }
+        public bool isIndividual { get; set; }
         public virtual ServicesModel.Models.Auth.Auth Auth { get; set; }
     }
 }

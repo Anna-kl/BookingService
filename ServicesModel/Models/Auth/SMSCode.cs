@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace ServicesModel.Models.Auth
@@ -15,7 +16,11 @@ namespace ServicesModel.Models.Auth
 
     public class CheckCode
     {
+        [Required]
         public string phone { get; set; }
+        [Required]
+        public string id { get; set; }
+        [Required]
         public string code { get; set; } 
     }
 }

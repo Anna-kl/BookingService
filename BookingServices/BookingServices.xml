@@ -36,7 +36,7 @@
             <param name="auth"></param>
             <returns>JSON Object</returns>
         </member>
-        <member name="M:BookingServices.BookingServices.Auth.AuthsController.Authorize(ServicesModel.Models.Auth.Register)">
+        <member name="M:BookingServices.BookingServices.Auth.AuthsController.Authorize(System.String)">
             <summary>
             Авторизация зарегистрированного пользователя
             </summary>

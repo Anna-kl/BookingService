@@ -105,7 +105,7 @@ namespace BookingServices.BookingServices.Account.AccountServices
                     accountid = account.id,
                     isfilled = CheckFilled(account),
                     name = account.name,
-
+                    role = role
                 };
             }
             else if (role=="staff")
@@ -116,7 +116,7 @@ namespace BookingServices.BookingServices.Account.AccountServices
                     accountid = account.id,
                     isfilled = CheckFilledStaff(account),
                     name = account.firstname,
-
+                    role = role
                 };
             } else
             {
